@@ -3116,6 +3116,7 @@ MonoBehaviour:
   maxRopeLength: 3
   slingLength: 0.6
   hookGap: 1
+  slingEdgeRatio: 0.6
   maxXOffset: 3
   baseSwingSpeed: 1.6
   speedPerFloor: 0.07

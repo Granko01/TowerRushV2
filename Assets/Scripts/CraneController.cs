@@ -11,9 +11,10 @@ public class CraneController : MonoBehaviour
     [SerializeField] private float animSpeed    = 3f;     // lerp speed (higher = faster)
 
     [Header("Rope")]
-    [SerializeField] private float maxRopeLength = 4.5f;
-    [SerializeField] private float slingLength   = 0.6f;  // vertical drop from hook to block top corners
-    [SerializeField] private float hookGap       = 1.0f;  // extra space between hook bottom and block top
+    [SerializeField] private float maxRopeLength  = 4.5f;
+    [SerializeField] private float slingLength    = 0.6f;  // vertical drop from hook to block top corners
+    [SerializeField] private float hookGap        = 1.0f;  // extra space between hook bottom and block top
+    [SerializeField] private float slingEdgeRatio = 0.6f;  // 0 = centre, 1 = full edge
 
     public float SlingLength => slingLength + hookGap;
 
@@ -162,12 +163,12 @@ public class CraneController : MonoBehaviour
         // Sling ropes — block position is driven by pendulum physics in BlockController
         if (activeBlock != null && activeBlock.State == BlockController.BlockState.OnCrane)
         {
-            // Slings attach at the actual rotated top-left / top-right corners of the block
-            var blockSR = activeBlock.GetComponent<SpriteRenderer>();
-            float lhw = blockSR != null && blockSR.sprite != null ? blockSR.sprite.bounds.extents.x : 0.5f;
-            float lhh = blockSR != null && blockSR.sprite != null ? blockSR.sprite.bounds.extents.y : 0.5f;
-            Vector3 topLeft  = activeBlock.transform.TransformPoint(new Vector3(-lhw,  lhh, 0f));
-            Vector3 topRight = activeBlock.transform.TransformPoint(new Vector3( lhw,  lhh, 0f));
+            // Slings attach at slingEdgeRatio of the half-width (0=centre, 1=full edge)
+            float hw = activeBlock.CurrentWidth * 0.5f * slingEdgeRatio;
+            float hh = TowerManager.Instance.BlockHeight * 0.5f;
+            Quaternion rot   = activeBlock.transform.rotation;
+            Vector3 topLeft  = activeBlock.transform.position + rot * new Vector3(-hw,  hh, 0f);
+            Vector3 topRight = activeBlock.transform.position + rot * new Vector3( hw,  hh, 0f);
 
             Vector3 attachPt = hookAttachPoint != null ? hookAttachPoint.position : HookPosition;
 
