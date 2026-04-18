@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using TMPro;
 
 public class UIManager : MonoBehaviour
@@ -10,6 +11,8 @@ public class UIManager : MonoBehaviour
     [SerializeField] private GameObject menuPanel;
     [SerializeField] private TMP_InputField betInput;
     [SerializeField] private Button playButton;
+    [SerializeField] private TMP_Text levelText;
+    [SerializeField] private Slider levelSlider;
 
     [Header("HUD Panel")]
     [SerializeField] private GameObject hudPanel;
@@ -33,52 +36,63 @@ public class UIManager : MonoBehaviour
 
     void Start()
     {
-        playButton.onClick.AddListener(OnPlayClicked);
-        cashOutButton.onClick.AddListener(OnCashOutClicked);
-        playAgainButton.onClick.AddListener(OnPlayAgainClicked);
-        menuButton.onClick.AddListener(OnMenuClicked);
+        if (playButton != null)     playButton.onClick.AddListener(OnPlayClicked);
+        if (cashOutButton != null)  cashOutButton.onClick.AddListener(OnCashOutClicked);
+        if (playAgainButton != null) playAgainButton.onClick.AddListener(OnPlayAgainClicked);
+        if (menuButton != null)     menuButton.onClick.AddListener(OnMenuClicked);
 
-        ShowMenu();
+        if (menuPanel != null) ShowMenu();
     }
 
     // ─── Panels ──────────────────────────────────────────────────────────────
 
     public void ShowMenu()
     {
-        menuPanel.SetActive(true);
-        hudPanel.SetActive(false);
-        resultPanel.SetActive(false);
+        if (menuPanel != null)   menuPanel.SetActive(true);
+        if (hudPanel != null)    hudPanel.SetActive(false);
+        if (resultPanel != null) resultPanel.SetActive(false);
+
+        int current = GameManager.GetCurrentLevel();
+        if (levelText != null)
+            levelText.text = $"Level {current}";
+        if (levelSlider != null)
+            levelSlider.value = (float)(current - 1) / (GameManager.MaxLevel - 1);
     }
 
     public void UpdateHUD()
     {
-        menuPanel.SetActive(false);
-        hudPanel.SetActive(true);
-        resultPanel.SetActive(false);
+        if (menuPanel != null)   menuPanel.SetActive(false);
+        if (hudPanel != null)    hudPanel.SetActive(true);
+        if (resultPanel != null) resultPanel.SetActive(false);
 
         float m = GameManager.Instance.Multiplier;
         int   f = GameManager.Instance.Floor;
         float b = GameManager.Instance.BetAmount;
 
-        multiplierText.text = $"{m:F2}x";
-        floorText.text      = $"Floor {f}";
-        betText.text        = $"Bet: {b:F2}";
+        if (multiplierText != null) multiplierText.text = $"{m:F2}x";
+        if (floorText != null)      floorText.text      = $"Floor {f} / {GameManager.Instance.EscapeFloor}";
+        if (betText != null)        betText.text        = $"Bet: {b:F2}";
     }
 
-    public void ShowResult(bool won, float amount)
+    public void ShowResult(bool won, float amount, bool escaped = false)
     {
-        hudPanel.SetActive(false);
-        resultPanel.SetActive(true);
+        if (hudPanel != null)    hudPanel.SetActive(false);
+        if (resultPanel != null) resultPanel.SetActive(true);
 
-        if (won)
+        if (escaped)
         {
-            resultTitleText.text  = "CASHED OUT!";
-            resultAmountText.text = $"+{amount:F2}";
+            if (resultTitleText != null)  resultTitleText.text  = "ESCAPED!";
+            if (resultAmountText != null) resultAmountText.text = $"+{amount:F2}";
+        }
+        else if (won)
+        {
+            if (resultTitleText != null)  resultTitleText.text  = "CASHED OUT!";
+            if (resultAmountText != null) resultAmountText.text = $"+{amount:F2}";
         }
         else
         {
-            resultTitleText.text  = "BUSTED!";
-            resultAmountText.text = "-" + GameManager.Instance.BetAmount.ToString("F2");
+            if (resultTitleText != null)  resultTitleText.text  = "BUSTED!";
+            if (resultAmountText != null) resultAmountText.text = "-" + GameManager.Instance.BetAmount.ToString("F2");
         }
     }
 
@@ -90,8 +104,8 @@ public class UIManager : MonoBehaviour
         if (betInput != null && float.TryParse(betInput.text, out float parsed))
             bet = Mathf.Max(1f, parsed);
 
-        GameManager.Instance.StartGame(bet);
-        Camera.main.GetComponent<CameraFollow>()?.ResetCamera();
+        PlayerPrefs.SetFloat("PendingBet", bet);
+        SceneManager.LoadScene("Gameplay" + GameManager.GetCurrentLevel());
     }
 
     private void OnCashOutClicked()
@@ -101,14 +115,12 @@ public class UIManager : MonoBehaviour
 
     private void OnPlayAgainClicked()
     {
-        float bet = GameManager.Instance.BetAmount;
-        GameManager.Instance.StartGame(bet);
-        Camera.main.GetComponent<CameraFollow>()?.ResetCamera();
+        PlayerPrefs.SetFloat("PendingBet", GameManager.Instance.BetAmount);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     private void OnMenuClicked()
     {
-        GameManager.Instance.ReturnToMenu();
-        Camera.main.GetComponent<CameraFollow>()?.ResetCamera();
+        SceneManager.LoadScene("Menu");
     }
 }

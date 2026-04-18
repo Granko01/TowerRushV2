@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -14,10 +15,26 @@ public class GameManager : MonoBehaviour
     [Header("Multiplier")]
     [SerializeField] private float multiplierPerFloor = 0.30f;
 
+    [Header("Escape")]
+    [SerializeField] private int escapeFloor = 10;
+    public int EscapeFloor => escapeFloor;
+
+    public const int MaxLevel = 7;
+    public static int GetCurrentLevel() => PlayerPrefs.GetInt("CurrentLevel", 1);
+
     void Awake()
     {
         if (Instance != null) { Destroy(gameObject); return; }
         Instance = this;
+    }
+
+    void Start()
+    {
+        if (SceneManager.GetActiveScene().name.StartsWith("Gameplay"))
+        {
+            float bet = PlayerPrefs.GetFloat("PendingBet", 10f);
+            StartGame(bet);
+        }
     }
 
     public void StartGame(float bet)
@@ -26,7 +43,6 @@ public class GameManager : MonoBehaviour
         Multiplier = 1f;
         Floor      = 0;
         State      = GameState.Playing;
-
         TowerManager.Instance.StartTower();
         UIManager.Instance.UpdateHUD();
     }
@@ -35,7 +51,27 @@ public class GameManager : MonoBehaviour
     {
         Floor++;
         Multiplier = 1f + Floor * multiplierPerFloor;
+
+        if (Floor >= escapeFloor)
+        {
+            TriggerEscape();
+            return;
+        }
+
         UIManager.Instance.UpdateHUD();
+    }
+
+    public void TriggerEscape()
+    {
+        if (State != GameState.Playing) return;
+        State = GameState.Idle;
+
+        int next = Mathf.Min(GetCurrentLevel() + 1, MaxLevel);
+        PlayerPrefs.SetInt("CurrentLevel", next);
+        PlayerPrefs.Save();
+
+        float winnings = BetAmount * Multiplier;
+        UIManager.Instance.ShowResult(true, winnings, escaped: true);
     }
 
     public void CashOut()
@@ -55,8 +91,6 @@ public class GameManager : MonoBehaviour
 
     public void ReturnToMenu()
     {
-        State = GameState.Idle;
-        TowerManager.Instance.ClearTower();
-        UIManager.Instance.ShowMenu();
+        SceneManager.LoadScene("Menu");
     }
 }

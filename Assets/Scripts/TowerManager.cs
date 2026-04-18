@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class TowerManager : MonoBehaviour
 {
@@ -14,6 +15,9 @@ public class TowerManager : MonoBehaviour
     [SerializeField] private float missThreshold = 0.0f;
     public GameObject BlockHolder;
     [SerializeField] private float towerBaseY = -5f;
+
+    [Header("Escape Line")]
+    [SerializeField] private Sprite escapeLineSprite;
 
 // Public
     public float TopY { get; private set; }
@@ -48,9 +52,10 @@ public class TowerManager : MonoBehaviour
 
         currentCenterX = 0f;
 
-       float camBottom = Camera.main.transform.position.y - Camera.main.orthographicSize;
-       TopY = camBottom + BlockHeight * 0.5f;
+        float camBottom = Camera.main.transform.position.y - Camera.main.orthographicSize;
+        TopY = camBottom + BlockHeight * 0.5f;
 
+        PlaceEscapeLine(TopY + GameManager.Instance.EscapeFloor * BlockHeight);
         SpawnBlockOnCrane();
     }
 
@@ -111,7 +116,8 @@ public class TowerManager : MonoBehaviour
         TopY          += BlockHeight;
 
         GameManager.Instance.RegisterFloor();
-        CraneController.Instance.TriggerExit(() => SpawnBlockOnCrane());
+        if (GameManager.Instance.State == GameManager.GameState.Playing)
+            CraneController.Instance.TriggerExit(() => SpawnBlockOnCrane());
     }
 
     // ─── Spawning ─────────────────────────────────────────────────────────────
@@ -186,6 +192,45 @@ public class TowerManager : MonoBehaviour
         }
 
         if (t != null) t.localScale = baseScale;
+    }
+
+    // ─── Escape Line ─────────────────────────────────────────────────────────
+
+    void PlaceEscapeLine(float y)
+    {
+        Transform old = transform.Find("EscapeLineRoot");
+        if (old != null) Destroy(old.gameObject);
+
+        GameObject root = new GameObject("EscapeLineRoot");
+        root.transform.SetParent(transform);
+
+        if (escapeLineSprite != null)
+        {
+            GameObject lineGO = new GameObject("LineSprite");
+            lineGO.transform.SetParent(root.transform);
+            lineGO.transform.position = new Vector3(0f, y, 0f);
+
+            SpriteRenderer sr = lineGO.AddComponent<SpriteRenderer>();
+            sr.sprite       = escapeLineSprite;
+            sr.sortingOrder = 10;
+
+            float screenWidth = Camera.main.orthographicSize * Camera.main.aspect * 2f;
+            float spriteWidth = escapeLineSprite.bounds.size.x;
+            lineGO.transform.localScale = new Vector3(screenWidth / spriteWidth, 1f, 1f);
+        }
+
+        GameObject labelGO = new GameObject("EscapeLabel");
+        labelGO.transform.SetParent(root.transform);
+        labelGO.transform.position = new Vector3(0f, y + 0.7f, 0f);
+
+        TextMeshPro tmp   = labelGO.AddComponent<TextMeshPro>();
+        tmp.text          = "ESCAPE HEIGHT";
+        tmp.fontSize      = 5.2f;
+        tmp.fontStyle     = FontStyles.Bold;
+        tmp.color         = Color.white;
+        tmp.alignment     = TextAlignmentOptions.Center;
+        tmp.sortingOrder  = 11;
+        labelGO.GetComponent<RectTransform>().sizeDelta = new Vector2(12f, 1.5f);
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
