@@ -15,16 +15,17 @@ public class CameraFollow : MonoBehaviour
     }
 
     void LateUpdate()
-    {
-        if (TowerManager.Instance == null) return;
+{
+    if (TowerManager.Instance == null) return;
 
-        // Always centre on the last placed block
-        float lastBlockCenterY = TowerManager.Instance.TopY - TowerManager.Instance.BlockHeight * 0.5f;
-        targetY = lastBlockCenterY;
+    float desiredY = TowerManager.Instance.TopY + yOffset;
 
-        float smoothedY = Mathf.Lerp(transform.position.y, targetY, smoothSpeed * Time.deltaTime);
-        transform.position = new Vector3(transform.position.x, smoothedY, transform.position.z);
-    }
+    targetY = Mathf.Max(targetY, desiredY);
+
+    float smoothedY = Mathf.Lerp(transform.position.y, targetY, smoothSpeed * Time.deltaTime);
+
+    transform.position = new Vector3(transform.position.x, smoothedY, transform.position.z);
+}
 
     public void ResetCamera()
     {

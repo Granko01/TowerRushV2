@@ -12,6 +12,8 @@ public class TowerManager : MonoBehaviour
     [Header("Tower")]
     public  float BlockHeight     = 2.083f;
     [SerializeField] private float missThreshold = 0.0f;
+    public GameObject BlockHolder;
+    [SerializeField] private float towerBaseY = -5f;
 
 // Public
     public float TopY { get; private set; }
@@ -36,7 +38,6 @@ public class TowerManager : MonoBehaviour
     {
         ClearTower();
 
-        // Read block size directly from the prefab sprite so it matches your art
         var sr = blockPrefabs[0].GetComponent<SpriteRenderer>();
         if (sr != null && sr.sprite != null)
         {
@@ -47,9 +48,8 @@ public class TowerManager : MonoBehaviour
 
         currentCenterX = 0f;
 
-        // First block lands at camera bottom
-        float camBottom = Camera.main.transform.position.y - Camera.main.orthographicSize;
-        TopY = camBottom;
+       float camBottom = Camera.main.transform.position.y - Camera.main.orthographicSize;
+       TopY = camBottom + BlockHeight * 0.5f;
 
         SpawnBlockOnCrane();
     }
@@ -122,7 +122,7 @@ public class TowerManager : MonoBehaviour
         CraneController.Instance.TriggerEntry();
 
         // Always use blockPrefabs[0] until all prefabs have art assigned
-        GameObject go = Instantiate(blockPrefabs[0], CraneController.Instance.HookPosition, Quaternion.identity);
+        GameObject go = Instantiate(NextPrefab(), CraneController.Instance.HookPosition, Quaternion.identity);
         BlockController bc = go.AddComponent<BlockController>();
         bc.Init(currentWidth);
         CraneController.Instance.AttachBlock(bc);
