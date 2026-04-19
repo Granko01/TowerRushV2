@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 public class TowerManager : MonoBehaviour
 {
@@ -11,7 +12,7 @@ public class TowerManager : MonoBehaviour
     [SerializeField] private GameObject[] blockPrefabs;
 
     [Header("Tower")]
-    public  float BlockHeight     = 2.083f;
+    public float BlockHeight = 2.083f;
     [SerializeField] private float missThreshold = 0.0f;
     public GameObject BlockHolder;
     [SerializeField] private float towerBaseY = -5f;
@@ -19,14 +20,25 @@ public class TowerManager : MonoBehaviour
     [Header("Escape Line")]
     [SerializeField] private Sprite escapeLineSprite;
 
-// Public
+    public GameObject[] Towers;
+    public int ShowTower = 0;
+
+    // Public
     public float TopY { get; private set; }
 
     // Private
-    private List<GameObject> placedBlocks  = new List<GameObject>();
-    private float            currentWidth;
-    private float            currentCenterX;
-    private int              prefabIndex = 0;
+    private List<GameObject> placedBlocks = new List<GameObject>();
+    private float currentWidth;
+    private float currentCenterX;
+    private int prefabIndex = 0;
+
+    [Header("Timer")]
+    [SerializeField] private float startTime = 60f; // assign in Inspector
+    [SerializeField] private Text[] timerText;
+
+    private float currentTime;
+    private bool isCounting = false;
+    public Text ReachText;
 
     // ─── Unity ───────────────────────────────────────────────────────────────
 
@@ -41,13 +53,13 @@ public class TowerManager : MonoBehaviour
     public void StartTower()
     {
         ClearTower();
-
+        Towers[ShowTower].gameObject.SetActive(true);
         var sr = blockPrefabs[0].GetComponent<SpriteRenderer>();
         if (sr != null && sr.sprite != null)
         {
-            Vector3 s    = blockPrefabs[0].transform.localScale;
+            Vector3 s = blockPrefabs[0].transform.localScale;
             currentWidth = sr.sprite.bounds.size.x * s.x;
-            BlockHeight  = sr.sprite.bounds.size.y * s.y;
+            BlockHeight = sr.sprite.bounds.size.y * s.y;
         }
 
         currentCenterX = 0f;
@@ -57,8 +69,36 @@ public class TowerManager : MonoBehaviour
 
         PlaceEscapeLine(TopY + GameManager.Instance.EscapeFloor * BlockHeight);
         SpawnBlockOnCrane();
+
+        currentTime = startTime;
+        isCounting = true;
     }
 
+    void Update()
+    {
+        if (!isCounting) return;
+
+        currentTime -= Time.deltaTime;
+
+        if (currentTime <= 0f)
+        {
+            currentTime = 0f;
+            isCounting = false;
+            GameManager.Instance.TriggerGameOver();
+        }
+
+        UpdateTimerUI();
+    }
+    void UpdateTimerUI()
+    {
+        if (timerText == null) return;
+
+        int minutes = Mathf.FloorToInt(currentTime / 60f);
+        int seconds = Mathf.FloorToInt(currentTime % 60f);
+
+        timerText[0].text = $"{minutes:00}:{seconds:00}";
+        timerText[1].text = $"{minutes:00}:{seconds:00}";
+    }
     public void ClearTower()
     {
         StopAllCoroutines();
@@ -76,16 +116,36 @@ public class TowerManager : MonoBehaviour
     // Called by BlockController when it hits the tower top
     public void OnBlockLanded(BlockController block)
     {
+
+        if (ShowTower > 3)
+        {
+            ShowTower = 0;
+            Towers[ShowTower].gameObject.SetActive(true);
+            return;
+        }
+        else if (ShowTower <= 3)
+        {
+            for (int i = 0; i < Towers.Length; i++)
+            {
+                Towers[i].gameObject.SetActive(false);
+            }
+            ShowTower++;
+            if (ShowTower > 3)
+                ShowTower = 0;
+            Towers[ShowTower].gameObject.SetActive(true);
+        }
+
+
         float dropX = block.transform.position.x;
         float dropW = block.CurrentWidth;
         Color blockColor = block.GetComponent<SpriteRenderer>().color;
 
-        float prevLeft  = currentCenterX - currentWidth / 2f;
+        float prevLeft = currentCenterX - currentWidth / 2f;
         float prevRight = currentCenterX + currentWidth / 2f;
-        float dropLeft  = dropX - dropW / 2f;
+        float dropLeft = dropX - dropW / 2f;
         float dropRight = dropX + dropW / 2f;
 
-        float overlapLeft  = Mathf.Max(prevLeft,  dropLeft);
+        float overlapLeft = Mathf.Max(prevLeft, dropLeft);
         float overlapRight = Mathf.Min(prevRight, dropRight);
         float overlapWidth = overlapRight - overlapLeft;
 
@@ -104,7 +164,7 @@ public class TowerManager : MonoBehaviour
         if (landedSR != null && landedSR.sprite != null)
         {
             currentWidth = landedSR.sprite.bounds.size.x * block.transform.localScale.x;
-            BlockHeight  = landedSR.sprite.bounds.size.y * block.transform.localScale.y;
+            BlockHeight = landedSR.sprite.bounds.size.y * block.transform.localScale.y;
         }
 
         block.transform.position = new Vector3(dropX, TopY + BlockHeight * 0.5f, 0f);
@@ -113,7 +173,7 @@ public class TowerManager : MonoBehaviour
         StartCoroutine(SquishBlock(block.transform));
 
         currentCenterX = dropX;
-        TopY          += BlockHeight;
+        TopY += BlockHeight;
 
         GameManager.Instance.RegisterFloor();
         if (GameManager.Instance.State == GameManager.GameState.Playing)
@@ -136,7 +196,7 @@ public class TowerManager : MonoBehaviour
 
     GameObject SpawnPlaced(float cx, float bottomY, float width)
     {
-        float cy = bottomY + BlockHeight * 0.5f;  // center = bottom edge + half height
+        float cy = bottomY + BlockHeight * 0.5f;
         GameObject go = Instantiate(NextPrefab(), new Vector3(cx, cy, 0f), Quaternion.identity);
         // Scale comes from the prefab — don't override it
         placedBlocks.Add(go);
@@ -145,11 +205,12 @@ public class TowerManager : MonoBehaviour
 
     void SpawnFallingPiece(float cx, float centerY, float width, Color color)
     {
+        Towers[ShowTower].gameObject.SetActive(false);
         GameObject go = Instantiate(NextPrefab(), new Vector3(cx, centerY, 0f), Quaternion.identity);
         // Scale from prefab
         go.GetComponent<SpriteRenderer>().color = color;
 
-        Rigidbody2D rb  = go.AddComponent<Rigidbody2D>();
+        Rigidbody2D rb = go.AddComponent<Rigidbody2D>();
         rb.gravityScale = 2.5f;
         rb.AddTorque(Random.Range(-90f, 90f));
 
@@ -211,7 +272,7 @@ public class TowerManager : MonoBehaviour
             lineGO.transform.position = new Vector3(0f, y, 0f);
 
             SpriteRenderer sr = lineGO.AddComponent<SpriteRenderer>();
-            sr.sprite       = escapeLineSprite;
+            sr.sprite = escapeLineSprite;
             sr.sortingOrder = 10;
 
             float screenWidth = Camera.main.orthographicSize * Camera.main.aspect * 2f;
@@ -223,13 +284,13 @@ public class TowerManager : MonoBehaviour
         labelGO.transform.SetParent(root.transform);
         labelGO.transform.position = new Vector3(0f, y + 0.7f, 0f);
 
-        TextMeshPro tmp   = labelGO.AddComponent<TextMeshPro>();
-        tmp.text          = "ESCAPE HEIGHT";
-        tmp.fontSize      = 5.2f;
-        tmp.fontStyle     = FontStyles.Bold;
-        tmp.color         = Color.white;
-        tmp.alignment     = TextAlignmentOptions.Center;
-        tmp.sortingOrder  = 11;
+        TextMeshPro tmp = labelGO.AddComponent<TextMeshPro>();
+        tmp.text = "ESCAPE HEIGHT";
+        tmp.fontSize = 5.2f;
+        tmp.fontStyle = FontStyles.Bold;
+        tmp.color = Color.white;
+        tmp.alignment = TextAlignmentOptions.Center;
+        tmp.sortingOrder = 11;
         labelGO.GetComponent<RectTransform>().sizeDelta = new Vector2(12f, 1.5f);
     }
 
