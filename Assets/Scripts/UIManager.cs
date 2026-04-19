@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using TMPro;
+using Unity.VisualScripting;
 
 public class UIManager : MonoBehaviour
 {
@@ -28,6 +29,14 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Button playAgainButton;
     [SerializeField] private Button menuButton;
 
+    public int CementAmount = 5;
+    public int CoinsAmount = 200;
+    public Text[] CementText;
+    public Text[] CoinText;
+    private const string CementKey = "Cement";
+    private const string CoinsKey = "Coins";
+    public GameObject ShopPanel;
+
     void Awake()
     {
         if (Instance != null) { Destroy(gameObject); return; }
@@ -36,12 +45,20 @@ public class UIManager : MonoBehaviour
 
     void Start()
     {
+        GetData();
         if (playButton != null)     playButton.onClick.AddListener(OnPlayClicked);
         if (cashOutButton != null)  cashOutButton.onClick.AddListener(OnCashOutClicked);
         if (playAgainButton != null) playAgainButton.onClick.AddListener(OnPlayAgainClicked);
         if (menuButton != null)     menuButton.onClick.AddListener(OnMenuClicked);
 
         if (menuPanel != null) ShowMenu();
+    }
+    public void GetData()
+    {
+        GetCement();
+        GetCoins();
+        UpdateUI(CementText, CementAmount);
+        UpdateUI(CoinText, CoinsAmount);
     }
 
     // ─── Panels ──────────────────────────────────────────────────────────────
@@ -122,5 +139,39 @@ public class UIManager : MonoBehaviour
     private void OnMenuClicked()
     {
         SceneManager.LoadScene("Menu");
+    }
+     public void GetCoins()
+    {
+        CoinsAmount = PlayerPrefs.GetInt(CoinsKey, CoinsAmount);
+    }
+    public void SetCoins()
+    {
+        PlayerPrefs.SetInt(CoinsKey, CoinsAmount);
+    }
+    public void GetCement()
+    {
+        CementAmount = PlayerPrefs.GetInt(CementKey, CementAmount);
+    }
+    public void SetCement()
+    {
+        PlayerPrefs.SetInt(CementKey, CementAmount);
+    }
+    public void UpdateUI(Text[] t, int amount)
+    {
+        foreach (var text in t)
+        {
+            text.text = amount.ToString();
+        }
+    }
+    public void OpenShop(bool show)
+    {
+        if (show)
+        {
+            ShopPanel.gameObject.SetActive(true);
+        }
+        else
+        {
+            ShopPanel.gameObject.SetActive(false);
+        }
     }
 }
