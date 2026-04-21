@@ -24,10 +24,13 @@ public class UIManager : MonoBehaviour
 
     [Header("Result Panel")]
     [SerializeField] private GameObject resultPanel;
+    [SerializeField] private GameObject YoulosePanel;
+    public GameObject NoCement;
+    public GameObject LeaveButton;
     [SerializeField] private TMP_Text resultTitleText;
     [SerializeField] private TMP_Text resultAmountText;
     [SerializeField] private Button playAgainButton;
-    [SerializeField] private Button menuButton;
+    [SerializeField] private Button[] menuButton;
 
     public int CementAmount = 5;
     public int CoinsAmount = 200;
@@ -49,7 +52,12 @@ public class UIManager : MonoBehaviour
         if (playButton != null)     playButton.onClick.AddListener(OnPlayClicked);
         if (cashOutButton != null)  cashOutButton.onClick.AddListener(OnCashOutClicked);
         if (playAgainButton != null) playAgainButton.onClick.AddListener(OnPlayAgainClicked);
-        if (menuButton != null)     menuButton.onClick.AddListener(OnMenuClicked);
+        if (SceneManager.GetActiveScene().name != "Menu" )
+        {
+             if (menuButton != null)     menuButton[0].onClick.AddListener(OnMenuClicked);
+            if (menuButton != null)     menuButton[1].onClick.AddListener(OnMenuClicked);
+        }
+       
 
         if (menuPanel != null) ShowMenu();
     }
@@ -68,6 +76,7 @@ public class UIManager : MonoBehaviour
         if (menuPanel != null)   menuPanel.SetActive(true);
         if (hudPanel != null)    hudPanel.SetActive(false);
         if (resultPanel != null) resultPanel.SetActive(false);
+        if (YoulosePanel != null) YoulosePanel.SetActive(false);
 
         int current = GameManager.GetCurrentLevel();
         if (levelText != null)
@@ -75,12 +84,16 @@ public class UIManager : MonoBehaviour
         if (levelSlider != null)
             levelSlider.value = (float)(current - 1) / (GameManager.MaxLevel - 1);
     }
-
+    public void TestScene()
+    {
+        SceneManager.LoadScene("Gameplay1");
+    }
     public void UpdateHUD()
     {
         if (menuPanel != null)   menuPanel.SetActive(false);
         if (hudPanel != null)    hudPanel.SetActive(true);
         if (resultPanel != null) resultPanel.SetActive(false);
+        if (YoulosePanel != null) YoulosePanel.SetActive(false);
 
         float m = GameManager.Instance.Multiplier;
         int   f = GameManager.Instance.Floor;
@@ -94,12 +107,13 @@ public class UIManager : MonoBehaviour
     public void ShowResult(bool won, float amount, bool escaped = false)
     {
         if (hudPanel != null)    hudPanel.SetActive(false);
-        if (resultPanel != null) resultPanel.SetActive(true);
+       
 
         if (escaped)
         {
             if (resultTitleText != null)  resultTitleText.text  = "ESCAPED!";
             if (resultAmountText != null) resultAmountText.text = $"+{amount:F2}";
+            if (resultPanel != null) resultPanel.SetActive(true);
         }
         else if (won)
         {
@@ -110,6 +124,8 @@ public class UIManager : MonoBehaviour
         {
             if (resultTitleText != null)  resultTitleText.text  = "BUSTED!";
             if (resultAmountText != null) resultAmountText.text = "-" + GameManager.Instance.BetAmount.ToString("F2");
+            if (YoulosePanel != null) YoulosePanel.SetActive(true);
+
         }
     }
 
@@ -173,5 +189,16 @@ public class UIManager : MonoBehaviour
         {
             ShopPanel.gameObject.SetActive(false);
         }
+    }
+
+    public void ShowLeaveButton()
+    {
+        if (LeaveButton != null)
+            LeaveButton.SetActive(true);
+    }
+
+    public void OnLeaveClicked()
+    {
+        SceneManager.LoadScene("Menu");
     }
 }

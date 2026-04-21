@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -27,6 +28,7 @@ public class CraneController : MonoBehaviour
     [SerializeField] private Sprite         gantrySprite;
     [SerializeField] private Sprite         cabSprite;
     [SerializeField] private Sprite         hookSprite;
+    [SerializeField] private Sprite         hookAttachSprite;  // optional; falls back to a solid rect
 
     [SerializeField] private Transform hookAttachPoint;   // drag this to the tip of your hook sprite
 
@@ -34,6 +36,10 @@ public class CraneController : MonoBehaviour
     [HideInInspector] [SerializeField] private SpriteRenderer cabRenderer;
     [HideInInspector] [SerializeField] private SpriteRenderer hookRenderer;
     [HideInInspector] [SerializeField] private Transform      hookVisual;
+
+    // pixels → world units (assumes 100 PPU)
+    private const float HookAttachW = 10f / 100f;   // 0.10 units
+    private const float HookAttachH = 30f / 100f;   // 0.30 units
 
     // Public
     public Vector3 HookPosition { get; private set; }
@@ -52,10 +58,13 @@ public class CraneController : MonoBehaviour
     private int             side       = 1;      // 1 or -1, alternates each round
     private System.Action   exitCallback;
 
+    public UIManager uIManager;
+
     // ─── Awake ───────────────────────────────────────────────────────────────
 
     void Awake()
     {
+        uIManager = UIManager.FindAnyObjectByType<UIManager>();
         if (Instance != null) { Destroy(gameObject); return; }
         Instance = this;
         rope = GetComponent<LineRenderer>();
@@ -70,6 +79,32 @@ public class CraneController : MonoBehaviour
         ApplySprite(gantryRenderer, gantrySprite);
         ApplySprite(cabRenderer,    cabSprite);
         ApplySprite(hookRenderer,   hookSprite);
+        SetupHookAttachVisual();
+    }
+
+    void SetupHookAttachVisual()
+    {
+        if (hookAttachPoint == null) return;
+
+        SpriteRenderer sr = hookAttachPoint.GetComponent<SpriteRenderer>();
+        if (sr == null) sr = hookAttachPoint.gameObject.AddComponent<SpriteRenderer>();
+
+        if (hookAttachSprite != null)
+        {
+            sr.sprite = hookAttachSprite;
+        }
+        else
+        {
+            // Generate a plain white 1×1 pixel sprite as fallback
+            Texture2D tex = new Texture2D(1, 1);
+            tex.SetPixel(0, 0, Color.white);
+            tex.Apply();
+            sr.sprite = Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
+        }
+
+        sr.color        = new Color(0.25f, 0.25f, 0.25f); // dark grey hook colour
+        sr.sortingOrder = 5;
+        hookAttachPoint.localScale = new Vector3(HookAttachW, HookAttachH, 1f);
     }
 
     void ApplySprite(SpriteRenderer sr, Sprite sprite)
@@ -170,7 +205,9 @@ public class CraneController : MonoBehaviour
             Vector3 topLeft  = activeBlock.transform.position + rot * new Vector3(-hw,  hh, 0f);
             Vector3 topRight = activeBlock.transform.position + rot * new Vector3( hw,  hh, 0f);
 
-            Vector3 attachPt = hookAttachPoint != null ? hookAttachPoint.position : HookPosition;
+            Vector3 attachPt = hookAttachPoint != null
+                ? hookAttachPoint.position + Vector3.down * (HookAttachH / 2f)
+                : HookPosition;
 
             leftSling.enabled  = true;
             rightSling.enabled = true;
@@ -186,13 +223,13 @@ public class CraneController : MonoBehaviour
         }
 
         // Drop input
-        if (canSwing)
-        {
-            bool tapped = (Mouse.current       != null && Mouse.current.leftButton.wasPressedThisFrame)
-                       || (Keyboard.current    != null && Keyboard.current.spaceKey.wasPressedThisFrame)
-                       || (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame);
-            if (tapped) DropBlock();
-        }
+        // if (canSwing)
+        // {
+        //     bool tapped = (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+        //                || (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+        //                || (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame);
+        //     if (tapped) DropBlock();
+        // }
     }
 
     // ─── Public API ──────────────────────────────────────────────────────────
@@ -244,11 +281,69 @@ public class CraneController : MonoBehaviour
 
     // ─── Private ─────────────────────────────────────────────────────────────
 
-    void DropBlock()
+    private bool _noCementRunning = false;
+
+    public void DropBlock()
     {
+        bool canDrop = !isEntering && !isExiting
+                    && GameManager.Instance != null
+                    && GameManager.Instance.State == GameManager.GameState.Playing;
+        if (!canDrop) return;
+
         if (activeBlock == null) return;
         if (activeBlock.State != BlockController.BlockState.OnCrane) return;
+
+        if (uIManager.CementAmount <= 0)
+        {
+            if (!_noCementRunning)
+                StartCoroutine(NoCementMeth());
+            return;
+        }
+
         activeBlock.Drop();
         activeBlock = null;
+        uIManager.CementAmount--;
+        uIManager.SetCement();
+        uIManager.UpdateUI(uIManager.CementText, uIManager.CementAmount);
+    }
+
+    IEnumerator NoCementMeth()
+    {
+        _noCementRunning = true;
+
+        GameObject obj = uIManager.NoCement;
+        RectTransform rt = obj.GetComponent<RectTransform>();
+        Vector2 shownPos  = rt.anchoredPosition;
+        Vector2 hiddenPos = shownPos + Vector2.down * 120f;
+
+        rt.anchoredPosition = hiddenPos;
+        obj.SetActive(true);
+
+        // slide in
+        float t = 0f;
+        while (t < 1f)
+        {
+            t += Time.unscaledDeltaTime * 5f;
+            rt.anchoredPosition = Vector2.Lerp(hiddenPos, shownPos, Mathf.SmoothStep(0f, 1f, t));
+            yield return null;
+        }
+        rt.anchoredPosition = shownPos;
+
+        yield return new WaitForSecondsRealtime(1.5f);
+
+        // slide out
+        t = 0f;
+        while (t < 1f)
+        {
+            t += Time.unscaledDeltaTime * 5f;
+            rt.anchoredPosition = Vector2.Lerp(shownPos, hiddenPos, Mathf.SmoothStep(0f, 1f, t));
+            yield return null;
+        }
+
+        obj.SetActive(false);
+        rt.anchoredPosition = shownPos;
+        _noCementRunning = false;
+
+        uIManager.ShowLeaveButton();
     }
 }
