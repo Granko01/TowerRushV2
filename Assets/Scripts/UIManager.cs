@@ -86,7 +86,11 @@ public class UIManager : MonoBehaviour
     }
     public void TestScene()
     {
-        SceneManager.LoadScene("Gameplay1");
+        float bet = 10f;
+        if (betInput != null && float.TryParse(betInput.text, out float parsed))
+            bet = Mathf.Max(1f, parsed);
+        PlayerPrefs.SetFloat("PendingBet", bet);
+        SceneManager.LoadScene("Gameplay" + GameManager.GetCurrentLevel());
     }
     public void UpdateHUD()
     {

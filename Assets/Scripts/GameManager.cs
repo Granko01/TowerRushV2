@@ -19,6 +19,9 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int escapeFloor = 10;
     public int EscapeFloor => escapeFloor;
 
+    [Header("Rewards")]
+    [SerializeField] private int coinsPerLevel = 25;
+
     public const int MaxLevel = 7;
     public static int GetCurrentLevel() => PlayerPrefs.GetInt("CurrentLevel", 1);
 
@@ -68,6 +71,9 @@ public class GameManager : MonoBehaviour
 
         int next = Mathf.Min(GetCurrentLevel() + 1, MaxLevel);
         PlayerPrefs.SetInt("CurrentLevel", next);
+
+        UIManager.Instance.CoinsAmount += coinsPerLevel;
+        UIManager.Instance.SetCoins();
         PlayerPrefs.Save();
 
         float winnings = BetAmount * Multiplier;
