@@ -43,6 +43,7 @@ public class Shop : MonoBehaviour
     {
         if (tag == "Cement" && uIManager.CoinsAmount > 25)
         {
+            AudioManager.Instance?.PlayButtonClick();
             uIManager.CoinsAmount -= CementInt;
             uIManager.CementAmount++;
             uIManager.SetCement();
@@ -55,6 +56,7 @@ public class Shop : MonoBehaviour
         }
         if (tag == "Speed" & uIManager.CoinsAmount > 25)
         {
+            AudioManager.Instance?.PlayButtonClick();
             uIManager.CoinsAmount -= 25;
             uIManager.SetCoins();
             uIManager.UpdateUI(uIManager.CoinText, uIManager.CoinsAmount);
@@ -64,6 +66,7 @@ public class Shop : MonoBehaviour
         }
         if (tag == "Spawn" & uIManager.CoinsAmount > 25)
         {
+            AudioManager.Instance?.PlayButtonClick();
             uIManager.CoinsAmount -= 25;
             uIManager.SetCoins();
             uIManager.UpdateUI(uIManager.CoinText, uIManager.CoinsAmount);
@@ -73,6 +76,7 @@ public class Shop : MonoBehaviour
         }
          if (tag == "CoinRate" & uIManager.CoinsAmount > 25)
         {
+            AudioManager.Instance?.PlayButtonClick();
             uIManager.CoinsAmount -= 25;
             uIManager.SetCoins();
             uIManager.UpdateUI(uIManager.CoinText, uIManager.CoinsAmount);

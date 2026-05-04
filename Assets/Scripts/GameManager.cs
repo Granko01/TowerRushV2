@@ -68,6 +68,7 @@ public class GameManager : MonoBehaviour
     {
         if (State != GameState.Playing) return;
         State = GameState.Idle;
+        AudioManager.Instance?.PlayWin();
 
         int next = Mathf.Min(GetCurrentLevel() + 1, MaxLevel);
         PlayerPrefs.SetInt("CurrentLevel", next);
@@ -84,6 +85,7 @@ public class GameManager : MonoBehaviour
     {
         if (State != GameState.Playing) return;
         State = GameState.Idle;
+        AudioManager.Instance?.PlayWin();
         float winnings = BetAmount * Multiplier;
         UIManager.Instance.ShowResult(true, winnings);
     }
@@ -92,6 +94,7 @@ public class GameManager : MonoBehaviour
     {
         if (State != GameState.Playing) return;
         State = GameState.GameOver;
+        AudioManager.Instance?.PlayLose();
         UIManager.Instance.ShowResult(false, 0f);
     }
 

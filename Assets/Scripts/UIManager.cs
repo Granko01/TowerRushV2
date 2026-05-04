@@ -137,6 +137,7 @@ public class UIManager : MonoBehaviour
 
     private void OnPlayClicked()
     {
+        AudioManager.Instance?.PlayButtonClick();
         float bet = 10f;
         if (betInput != null && float.TryParse(betInput.text, out float parsed))
             bet = Mathf.Max(1f, parsed);
@@ -147,17 +148,20 @@ public class UIManager : MonoBehaviour
 
     private void OnCashOutClicked()
     {
+        AudioManager.Instance?.PlayButtonClick();
         GameManager.Instance.CashOut();
     }
 
     private void OnPlayAgainClicked()
     {
+        AudioManager.Instance?.PlayButtonClick();
         PlayerPrefs.SetFloat("PendingBet", GameManager.Instance.BetAmount);
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     private void OnMenuClicked()
     {
+        AudioManager.Instance?.PlayButtonClick();
         SceneManager.LoadScene("Menu");
     }
      public void GetCoins()
@@ -185,14 +189,8 @@ public class UIManager : MonoBehaviour
     }
     public void OpenShop(bool show)
     {
-        if (show)
-        {
-            ShopPanel.gameObject.SetActive(true);
-        }
-        else
-        {
-            ShopPanel.gameObject.SetActive(false);
-        }
+        AudioManager.Instance?.PlayButtonClick();
+        ShopPanel.gameObject.SetActive(show);
     }
 
     public void ShowLeaveButton()
@@ -203,6 +201,7 @@ public class UIManager : MonoBehaviour
 
     public void OnLeaveClicked()
     {
+        AudioManager.Instance?.PlayButtonClick();
         SceneManager.LoadScene("Menu");
     }
 }

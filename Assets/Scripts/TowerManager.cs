@@ -171,6 +171,7 @@ public class TowerManager : MonoBehaviour
         block.transform.rotation = Quaternion.identity;
         placedBlocks.Add(block.gameObject);
         StartCoroutine(SquishBlock(block.transform));
+        AudioManager.Instance?.PlayDrop();
 
         currentCenterX = dropX;
         TopY += BlockHeight;

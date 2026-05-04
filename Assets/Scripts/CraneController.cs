@@ -301,6 +301,7 @@ public class CraneController : MonoBehaviour
         }
 
         activeBlock.Drop();
+        AudioManager.Instance?.PlayCementUse();
         activeBlock = null;
         uIManager.CementAmount--;
         uIManager.SetCement();
