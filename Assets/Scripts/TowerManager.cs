@@ -286,7 +286,7 @@ public class TowerManager : MonoBehaviour
         labelGO.transform.position = new Vector3(0f, y + 0.7f, 0f);
 
         TextMeshPro tmp = labelGO.AddComponent<TextMeshPro>();
-        tmp.text = "ESCAPE HEIGHT";
+        tmp.text = "EXTRACTION";
         tmp.fontSize = 5.2f;
         tmp.fontStyle = FontStyles.Bold;
         tmp.color = Color.white;

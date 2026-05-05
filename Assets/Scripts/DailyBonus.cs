@@ -83,15 +83,24 @@ public class DailyBonus : MonoBehaviour
     }
 
     // ─── UI state ─────────────────────────────────────────────────────────────
+void RefreshUI()
+{
+    bool unlocked = IsUnlocked();
+    bool ready    = CanClaim();
 
-    void RefreshUI()
-    {
-        bool unlocked = IsUnlocked();
-        bool ready    = CanClaim();
-        SetActive(unlockButton, !unlocked);
-        SetActive(claimButton,  unlocked && ready);
-        SetActive(timerText,    unlocked && !ready);
-    }
+    // Unlock button only before unlocking
+    SetActive(unlockButton, !unlocked);
+
+    // Claim button ALWAYS visible after unlock
+    SetActive(claimButton, unlocked);
+
+    // Control interactability instead of visibility
+    if (claimButton != null)
+        claimButton.interactable = unlocked && ready;
+
+    // Timer visible only when waiting
+    SetActive(timerText, unlocked && !ready);
+}
 
     void UpdateCountdown()
     {

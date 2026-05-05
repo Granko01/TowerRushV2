@@ -28,7 +28,8 @@ public class CraneController : MonoBehaviour
     [SerializeField] private Sprite         gantrySprite;
     [SerializeField] private Sprite         cabSprite;
     [SerializeField] private Sprite         hookSprite;
-    [SerializeField] private Sprite         hookAttachSprite;  // optional; falls back to a solid rect
+    [SerializeField] public Sprite         hookAttachSprite;  // optional; falls back to a solid rect
+    [SerializeField] private Texture2D      craneLineTexture;
 
     [SerializeField] private Transform hookAttachPoint;   // drag this to the tip of your hook sprite
 
@@ -131,6 +132,14 @@ public class CraneController : MonoBehaviour
         go.transform.SetParent(transform, false);
         LineRenderer lr = go.AddComponent<LineRenderer>();
         ConfigureRope(lr);
+        if (craneLineTexture != null)
+        {
+            Material mat = new Material(Shader.Find("Sprites/Default"));
+            mat.mainTexture = craneLineTexture;
+            mat.mainTextureScale = new Vector2(1f, 4f);
+            lr.material = mat;
+            lr.textureMode = LineTextureMode.Tile;
+        }
         lr.enabled = false;
         return lr;
     }
